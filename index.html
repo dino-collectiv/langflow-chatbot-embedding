@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Langflow Agent</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 90vh; /* Adjust as needed */
+        }
+        langflow-chat {
+            width: 100%;
+            max-width: 800px; /* Optional: Constrain chat width */
+            height: 600px; /* Adjust chat height as needed */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <h1>My Langflow AI Agent</h1>
+    <p>This is a simple page to demonstrate the embedded Langflow chat.</p>
+
+    <script src="https://cdn.jsdelivr.net/gh/logspace-ai/langflow-embedded-chat@v1.0.7/dist/build/static/js/bundle.min.js"></script>
+
+    <langflow-chat
+        window_title="Neo4j MCP Agent (0.0.1)"
+        flow_id="5a7eef21-e75d-45d2-b45d-70315173826a"
+        host_url="https://langflow-dev.collectiv.co"
+        api_key="sk-kDoPrM3zsHGbvTZzCGb8PHfkehed0Ejyjw6ablKI-yA"> <!-- IMPORTANT: Replace with your actual API key -->
+    </langflow-chat>
+
+    <p>Feel free to interact with the agent above!</p>
+</body>
+</html>
