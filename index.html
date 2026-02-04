@@ -397,8 +397,57 @@
                     window_title="Neo4j MCP Agent (0.0.1)"
                     flow_id="5a7eef21-e75d-45d2-b45d-70315173826a"
                     host_url="https://langflow-dev.collectiv.co"
-                    api_key="sk-kDoPrM3zsHGbvTZzCGb8PHfkehed0Ejyjw6ablKI-yA">
-                </langflow-chat>
+                    api_key="sk-kDoPrM3zsHGbvTZzCGb8PHfkehed0Ejyjw6ablKI-yA"
+                    online_message="Connected"
+                offline_message="Disconnected"
+                start_open="true"
+                chat_position="center"
+
+                chat_trigger_style='{
+                    "position": "fixed",
+                    "top": "24px",
+                    "left": "24px",
+                    "opacity": "0",
+                    "pointerEvents": "none",
+                    "width": "48px",
+                    "height": "48px"
+                }'
+
+                input_container_style='{
+                    "backgroundColor": "transparent",
+                    "borderTop": "1px solid rgba(15, 23, 42, 0.08)",
+                    "padding": "18px 22px 22px 22px"
+                }'
+
+                input_style='{
+                    "backgroundColor": "#f5f3ef",
+                    "borderRadius": "24px",
+                    "border": "1px solid rgba(15, 23, 42, 0.08)",
+                    "padding": "13px 18px",
+                    "color": "#0f172a",
+                    "fontSize": "14px",
+                    "boxShadow": "inset 0 1px 4px rgba(15, 23, 42, 0.06)"
+                }'
+
+                send_button_style='{
+                    "marginLeft": "10px"
+                }'
+
+                user_message_style='{
+                    "backgroundColor": "#0f172a",
+                    "color": "white",
+                    "borderRadius": "20px 20px 4px 20px",
+                    "boxShadow": "0 10px 20px rgba(15, 23, 42, 0.2)",
+                    "fontSize": "14px"
+                }'
+
+                bot_message_style='{
+                    "backgroundColor": "#fff7ed",
+                    "color": "#0f172a",
+                    "borderRadius": "20px 20px 20px 4px",
+                    "fontSize": "14px"
+                }'
+                ></langflow-chat>
             </div>
         </section>
 
