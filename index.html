@@ -3,40 +3,802 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Langflow Agent</title>
+    <title>Neo4j MCP Agent - West Kowloon Navigation</title>
     <style>
+        :root {
+            --color-primary: #4f46e5;
+            --color-primary-dark: #4338ca;
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-border: #e2e8f0;
+            --color-text: #1e293b;
+            --color-text-muted: #64748b;
+            --color-accent: #06b6d4;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            --radius: 8px;
+            --radius-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: sans-serif;
-            margin: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        /* Main Layout */
+        .page-container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--color-surface);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Section 1: Chatbot */
+        .chatbot-section {
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 90vh; /* Adjust as needed */
+            padding: 2rem;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
         }
+
+        .chatbot-wrapper {
+            width: 80%;
+            height: 80vh;
+            min-width: 320px;
+            min-height: 500px;
+            max-width: 1000px;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
         langflow-chat {
             width: 100%;
-            max-width: 800px; /* Optional: Constrain chat width */
-            height: 600px; /* Adjust chat height as needed */
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            height: 100%;
+            display: block;
+        }
+
+        /* Section 2: Reference Data */
+        .reference-section {
+            padding: 3rem 2rem;
+            background: var(--color-bg);
+        }
+
+        .reference-section h2 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: var(--color-text);
+        }
+
+        .reference-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 900px) {
+            .reference-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panel Styles */
+        .panel {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
             overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--color-primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .panel-content {
+            padding: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Accordion Styles */
+        .accordion-item {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .accordion-item:last-child {
+            border-bottom: none;
+        }
+
+        .accordion-header {
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: background 0.2s;
+        }
+
+        .accordion-header:hover {
+            background: #f1f5f9;
+        }
+
+        .accordion-header .question {
+            font-weight: 500;
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        .accordion-header .icon {
+            color: var(--color-primary);
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+
+        .accordion-item.open .accordion-header .icon {
+            transform: rotate(45deg);
+        }
+
+        .accordion-body {
+            display: none;
+            padding: 0 1rem 1rem 1rem;
+        }
+
+        .accordion-item.open .accordion-body {
+            display: block;
+        }
+
+        .answer-content {
+            background: #f8fafc;
+            border-radius: var(--radius);
+            padding: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .answer-content h4 {
+            color: var(--color-primary);
+            margin: 1rem 0 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .answer-content h4:first-child {
+            margin-top: 0;
+        }
+
+        .answer-content ul {
+            margin-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .answer-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .answer-content th, .answer-content td {
+            padding: 0.5rem;
+            border: 1px solid var(--color-border);
+            text-align: left;
+        }
+
+        .answer-content th {
+            background: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .answer-content code {
+            background: #e2e8f0;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .answer-content .route-step {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+        }
+
+        .answer-content .route-arrow {
+            color: var(--color-accent);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--color-border);
+            background: #f8fafc;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .tab-btn.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Category Groups */
+        .category-group {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .category-group:last-child {
+            border-bottom: none;
+        }
+
+        .category-header {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+
+        .category-header:hover {
+            background: #e2e8f0;
+        }
+
+        .category-header .count {
+            background: var(--color-primary);
+            color: white;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .category-pois {
+            display: none;
+            padding: 0.5rem 1rem 1rem 1rem;
+        }
+
+        .category-group.open .category-pois {
+            display: block;
+        }
+
+        .poi-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .poi-item:last-child {
+            border-bottom: none;
+        }
+
+        .poi-name {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .poi-name-zh {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .poi-badge {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-border);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Scroll to top indicator */
+        .scroll-indicator {
+            text-align: center;
+            padding: 1rem;
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .scroll-indicator::after {
+            content: ' \2193';
         }
     </style>
 </head>
 <body>
-    <h1>My Langflow AI Agent</h1>
-    <p>This is a simple page to demonstrate the embedded Langflow chat.</p>
+    <div class="page-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Neo4j MCP Agent</h1>
+            <p>Test the West Kowloon Culture District Navigation Assistant powered by Neo4j Graph Database</p>
+        </header>
 
-    <script src="https://cdn.jsdelivr.net/gh/logspace-ai/langflow-embedded-chat@v1.0.7/dist/build/static/js/bundle.min.js"></script>
+        <!-- Section 1: Chatbot -->
+        <section class="chatbot-section">
+            <div class="chatbot-wrapper">
+                <langflow-chat
+                    window_title="Neo4j MCP Agent (0.0.1)"
+                    flow_id="5a7eef21-e75d-45d2-b45d-70315173826a"
+                    host_url="https://langflow-dev.collectiv.co"
+                    api_key="sk-kDoPrM3zsHGbvTZzCGb8PHfkehed0Ejyjw6ablKI-yA">
+                </langflow-chat>
+            </div>
+        </section>
 
-    <langflow-chat
-        window_title="Neo4j MCP Agent (0.0.1)"
-        flow_id="5a7eef21-e75d-45d2-b45d-70315173826a"
-        host_url="https://langflow-dev.collectiv.co"
-        api_key="sk-kDoPrM3zsHGbvTZzCGb8PHfkehed0Ejyjw6ablKI-yA"> <!-- IMPORTANT: Replace with your actual API key -->
-    </langflow-chat>
+        <div class="scroll-indicator">Scroll down for sample questions and POI reference data</div>
 
-    <p>Feel free to interact with the agent above!</p>
+        <!-- Section 2: Reference Data -->
+        <section class="reference-section">
+            <h2>Reference Data</h2>
+            <div class="reference-grid">
+                <!-- Sample Q&A Panel -->
+                <div class="panel">
+                    <div class="panel-header">Sample Questions & Answers</div>
+                    <div class="panel-content">
+                        <!-- Q1: Schema -->
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion(this)">
+                                <span class="question">Inspect the schema and tell me about the data model. How are POIs classified?</span>
+                                <span class="icon">+</span>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="answer-content">
+                                    <h4>Data Model Summary</h4>
+                                    <p>Classification Hierarchy (3-tier taxonomy):</p>
+                                    <code>Category → SubCategory → Tag ← POI</code>
+
+                                    <h4>Key Relationships</h4>
+                                    <table>
+                                        <tr><th>Relationship</th><th>From</th><th>To</th><th>Notes</th></tr>
+                                        <tr><td>BELONGS_TO</td><td>POI</td><td>Category, SubCategory</td><td>POIs can belong to both</td></tr>
+                                        <tr><td>IS_A</td><td>SubCategory</td><td>Category</td><td>Hierarchical taxonomy</td></tr>
+                                        <tr><td>SPECIALIZES_IN</td><td>POI</td><td>Tag</td><td>Has confidence score (0-1)</td></tr>
+                                        <tr><td>COMPETES_WITH</td><td>POI</td><td>POI</td><td>Self-referential, has reason</td></tr>
+                                        <tr><td>LOCATED_AT</td><td>POI</td><td>RoutingNode</td><td>Spatial anchor point</td></tr>
+                                    </table>
+
+                                    <h4>Interesting Design Choices</h4>
+                                    <ul>
+                                        <li><strong>Dual classification</strong> - POIs link to both Category AND SubCategory</li>
+                                        <li><strong>Vector embeddings</strong> - Category, SubCategory, Tag, POI all have embedding properties</li>
+                                        <li><strong>Confidence-weighted tags</strong> - SPECIALIZES_IN has confidence float (~0.88-0.91)</li>
+                                        <li><strong>Competition graph</strong> - COMPETES_WITH creates competitive landscape overlay</li>
+                                        <li><strong>Routing layer separation</strong> - POIs link to RoutingNode for navigation</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q2: Competition Analysis -->
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion(this)">
+                                <span class="question">Find 'MOS Cafe' and tell me if it has any competitors. Why are they considered competitors?</span>
+                                <span class="icon">+</span>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="answer-content">
+                                    <h4>MOS Cafe Competition Analysis</h4>
+                                    <p>MOS Cafe (B2 Floor) - Japanese fine burger chain since 1972, categorized as Cafe under Dining.</p>
+
+                                    <h4>Direct Competitors in Graph</h4>
+                                    <table>
+                                        <tr><th>Competitor</th><th>Floor</th><th>Competition Reason</th></tr>
+                                        <tr><td>Star Place</td><td>L1</td><td>Both offer BBQ Meat</td></tr>
+                                        <tr><td>Peony Garden</td><td>G</td><td>Both offer BBQ Meat</td></tr>
+                                    </table>
+
+                                    <h4>Tag Overlap Analysis</h4>
+                                    <table>
+                                        <tr><th>Tag</th><th>MOS Cafe</th><th>Star Place</th><th>Peony Garden</th></tr>
+                                        <tr><td>BBQ Meat</td><td>0.89</td><td>0.89</td><td>0.89</td></tr>
+                                        <tr><td>Teppanyaki</td><td>0.89</td><td>0.89</td><td>0.89</td></tr>
+                                        <tr><td>Burger</td><td>0.90</td><td>-</td><td>-</td></tr>
+                                        <tr><td>Dim Sum</td><td>-</td><td>0.91</td><td>0.91</td></tr>
+                                    </table>
+
+                                    <h4>Business Insight</h4>
+                                    <p>The competition is narrowly defined - only through "BBQ Meat". In reality, MOS Cafe (Japanese burgers) and Star Place/Peony Garden (Chinese restaurants) serve quite different market segments.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q3: Recommendations -->
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion(this)">
+                                <span class="question">I'm planning a date. I want to start with dinner at 'Star Place'. What activities can I do after?</span>
+                                <span class="icon">+</span>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="answer-content">
+                                    <h4>Date Night Recommendations After Star Place</h4>
+
+                                    <h4>Top Pick: Tea House Theatre (Same Floor - L1)</h4>
+                                    <p>An elegant, Chinese-style performance space where audiences are seated at tables and served tea and traditional dim sum.</p>
+                                    <p><em>The Vibe: Intimate, romantic, culturally immersive. Very "hidden gem" energy.</em></p>
+
+                                    <h4>Grand Option: Grand Theatre (One Floor Up - L2)</h4>
+                                    <p>1,075-seat world-class venue showcasing traditional and contemporary Xiqu performances.</p>
+                                    <p><em>The Vibe: Classic date night. Dinner → show. More formal, larger-scale productions.</em></p>
+
+                                    <h4>Chill Alternative: Linong Tea (Same Floor - L1)</h4>
+                                    <p>Tea specialists since 1986 - Pu'er, Tieguanyin, Longjing, Oolong, plus Yixing Zisha teapots.</p>
+                                    <p><em>The Vibe: Low-key post-dinner stroll. Browse tea ware together.</em></p>
+
+                                    <h4>Nightcap: Major Cellar (LG Floor)</h4>
+                                    <p>Curated wine and spirits selection, events, and tasting experiences.</p>
+                                    <p><em>The Vibe: If the date's going well and you want to extend the evening.</em></p>
+
+                                    <h4>Suggested Flow</h4>
+                                    <div class="route-step">Star Place (Dinner, L1) <span class="route-arrow">→</span> Linong Tea (browse, L1) <span class="route-arrow">→</span> Tea House Theatre (show, L1) <span class="route-arrow">→</span> Major Cellar (nightcap, LG)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q4: Navigation -->
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion(this)">
+                                <span class="question">I need to get from 'Atrium' to 'Star Place', without taking any Lifts. Find the shortest path.</span>
+                                <span class="icon">+</span>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="answer-content">
+                                    <h4>Route: Atrium → Star Place (No Lifts)</h4>
+                                    <table>
+                                        <tr><th>Step</th><th>Action</th><th>From</th><th>To</th><th>Distance</th><th>Accessible</th></tr>
+                                        <tr><td>1</td><td>WALK</td><td>G</td><td>G</td><td>11.2m</td><td>Yes</td></tr>
+                                        <tr><td>2</td><td>WALK</td><td>G</td><td>G</td><td>7.7m</td><td>Yes</td></tr>
+                                        <tr><td>3</td><td>WALK</td><td>G</td><td>G</td><td>5.6m</td><td>Yes</td></tr>
+                                        <tr><td>4</td><td>STAIRS</td><td>G</td><td>L1</td><td>20.0m</td><td>No</td></tr>
+                                        <tr><td>5</td><td>WALK</td><td>L1</td><td>L1</td><td>2.5m</td><td>Yes</td></tr>
+                                        <tr><td>6</td><td>WALK</td><td>L1</td><td>L1</td><td>8.6m</td><td>Yes</td></tr>
+                                        <tr><td>7</td><td>WALK</td><td>L1</td><td>L1</td><td>9.5m</td><td>Yes</td></tr>
+                                        <tr><td>8</td><td>WALK</td><td>L1</td><td>L1</td><td>9.6m</td><td>Yes</td></tr>
+                                        <tr><td>9</td><td>WALK</td><td>L1</td><td>L1</td><td>10.1m</td><td>Yes</td></tr>
+                                        <tr><td>10</td><td>WALK</td><td>L1</td><td>L1</td><td>11.4m</td><td>Yes</td></tr>
+                                    </table>
+                                    <p><strong>Total Distance: 96.2 meters (10 hops)</strong></p>
+                                    <p><em>Note: Step 4 uses STAIRS (not accessible). If accessibility is required, modify the query to use [:WALK|ESCALATOR*] only.</em></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q5: Cross-Venue Navigation -->
+                        <div class="accordion-item">
+                            <div class="accordion-header" onclick="toggleAccordion(this)">
+                                <span class="question">I am at Star Place in Xiqu Centre. How to get to 7-Eleven in West Kowloon Station?</span>
+                                <span class="icon">+</span>
+                            </div>
+                            <div class="accordion-body">
+                                <div class="answer-content">
+                                    <h4>Route: Star Place (Xiqu Centre) → 7-Eleven (West Kowloon Station)</h4>
+                                    <p><strong>Total Distance: ~438 meters | 17 steps | Fully accessible ✓</strong></p>
+
+                                    <h4>Step-by-Step Directions</h4>
+                                    <table>
+                                        <tr><th>Phase</th><th>Action</th><th>Floor</th><th>Distance</th><th>Landmarks</th></tr>
+                                        <tr><td>1</td><td>WALK</td><td>L1</td><td>28m</td><td>Pass toilets near Star Place</td></tr>
+                                        <tr><td>2</td><td>LIFT ↓</td><td>L1 → B2</td><td>—</td><td>Take lift down to B2</td></tr>
+                                        <tr><td>3-7</td><td>WALK</td><td>B2</td><td>32m</td><td>Pass Eat East, MOS Cafe, Zero to One Tea</td></tr>
+                                        <tr><td>8</td><td>WALK (tunnel)</td><td>B2 → L1</td><td>200m</td><td>Underground passage to West Kowloon Station</td></tr>
+                                        <tr><td>9-14</td><td>WALK</td><td>L1</td><td>125m</td><td>Pass L1 Exhibition Area, toilets</td></tr>
+                                        <tr><td>15</td><td>LIFT ↓</td><td>L1 → B1</td><td>—</td><td>Take lift down to B1</td></tr>
+                                        <tr><td>16-17</td><td>WALK</td><td>B1</td><td>13m</td><td>Pass Mannings → 7-Eleven</td></tr>
+                                    </table>
+
+                                    <h4>Narrative Directions</h4>
+                                    <ol>
+                                        <li>Start at Star Place (L1, Xiqu Centre)</li>
+                                        <li>Walk towards the lift lobby (~28m), passing the toilets</li>
+                                        <li>Take the lift down to B2</li>
+                                        <li>Walk through B2 — you'll pass Eat East, Rainbow Creative Arts, Zero to One Tea, MOS Cafe</li>
+                                        <li>At the end, reach the Austin MTR Station entrance/connection tunnel (~200m underground walkway)</li>
+                                        <li>Emerge at L1 of West Kowloon Station</li>
+                                        <li>Walk through L1 Exhibition Area (~125m)</li>
+                                        <li>Take the lift down to B1</li>
+                                        <li>Walk past Mannings (~13m)</li>
+                                        <li>Arrive at 7-Eleven (right next to a vending machine)</li>
+                                    </ol>
+
+                                    <h4>Summary</h4>
+                                    <div class="route-step">
+                                        Xiqu Centre L1 (Star Place) <span class="route-arrow">↓</span> Lift <span class="route-arrow">→</span>
+                                        Xiqu Centre B2 <span class="route-arrow">→</span> Underground tunnel (200m) <span class="route-arrow">→</span>
+                                        WKS L1 <span class="route-arrow">↓</span> Lift <span class="route-arrow">→</span>
+                                        WKS B1 (7-Eleven) ✓
+                                    </div>
+                                    <p><em>Estimated walking time: ~6-8 minutes (at normal pace)</em></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POI Browser Panel -->
+                <div class="panel">
+                    <div class="panel-header">Available POIs</div>
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTab('xiqu')">Xiqu Centre</button>
+                        <button class="tab-btn" onclick="switchTab('wks')">West Kowloon Station</button>
+                    </div>
+                    <div class="panel-content">
+                        <div id="xiqu-tab" class="tab-content active"></div>
+                        <div id="wks-tab" class="tab-content"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Neo4j MCP Agent v0.0.1 | Powered by Langflow & Neo4j Graph Database</p>
+        </footer>
+    </div>
+
+    <!-- Langflow Chat Script -->
+    <script src="https://cdn.jsdelivr.net/gh/logspace-ai/langflow-embedded-chat@v1.0.8/dist/build/static/js/bundle.min.js"></script>
+
+    <script>
+        // POI Data - Xiqu Centre
+        const xiquPois = [
+            { name: "Peony Garden", name_zh: "遊園茶記", categories: ["Dining"], description: "A cha chaan teng - style restaurant with a menu inspired by Chinese and Western cuisines and the art and culture of Xiqu." },
+            { name: "Zhenpingang", name_zh: "珍品港", categories: ["Dining", "Cafe"], description: "Premium Chinese Moutai-Flavor liquors and ZPG Coffee." },
+            { name: "Mak's Noodle", name_zh: "麥奀雲吞面世家1920", categories: ["Dining"], description: "Famous wonton noodle from Guangzhou's King of Wonton Noodle." },
+            { name: "Star Place", name_zh: "明星樓", categories: ["Dining"], description: "Contemporary Chinese restaurant with dim sum and wedding banquet hall." },
+            { name: "MOS Cafe", name_zh: "MOS Cafe", categories: ["Dining", "Cafe"], description: "Japanese fine burger chain since 1972." },
+            { name: "Tea House Theatre", name_zh: "茶館劇場", categories: ["Attractions"], description: "Chinese-style performance space for up to 200 people with tea and dim sum service." },
+            { name: "Grand Theatre", name_zh: "大劇院", categories: ["Attractions"], description: "1,075-seat world-class venue for traditional and contemporary xiqu performances." },
+            { name: "Atrium", name_zh: "中庭", categories: ["Attractions"], description: "Covered public atrium with urban stage for exhibitions and xiqu demonstrations." },
+            { name: "Theatre Garden", name_zh: "劇院花園", categories: ["Attractions"], description: "" },
+            { name: "FHKA Seminar Hall", name_zh: "香港友好協進會演講廳", categories: ["Attractions"], description: "Designed for screenings, talks and cultural exchanges. Seating capacity 112." },
+            { name: "Studio 1", name_zh: "排演室 1", categories: ["Attractions"], description: "Rehearsal studio with 8m ceiling, same dimensions as Grand Theatre stage." },
+            { name: "Studio 2", name_zh: "排演室 2", categories: ["Attractions"], description: "Rehearsal studio with projection, lighting and sound systems." },
+            { name: "Studio 3", name_zh: "排演室 3", categories: ["Attractions"], description: "Rehearsal studio with 8m high ceiling." },
+            { name: "Studio 4", name_zh: "排演室 4", categories: ["Attractions"], description: "Rehearsal studio with projection facilities." },
+            { name: "Studio 5", name_zh: "排演室 5", categories: ["Attractions"], description: "Rehearsal studio with projection facilities." },
+            { name: "Studio 6", name_zh: "排演室 6", categories: ["Attractions"], description: "Rehearsal studio with projection facilities." },
+            { name: "Studio 7", name_zh: "排演室 7", categories: ["Attractions"], description: "Rehearsal studio with projection facilities." },
+            { name: "Studio 8", name_zh: "排演室 8", categories: ["Attractions"], description: "Rehearsal studio with projection facilities." },
+            { name: "Major Cellar", name_zh: "美酒滙", categories: ["Shopping"], description: "Curated selection of wines and spirits since 2008." },
+            { name: "Kafook Florist", name_zh: "嘉馥花卉", categories: ["Shopping"], description: "Japanese preserved, fresh, and silk flowers with floral arrangement courses." },
+            { name: "Eat East", name_zh: "波仔", categories: ["Shopping"], description: "Pre-packaged chilled and frozen foods in Chinese, Western, Japanese and Korean styles." },
+            { name: "Natural is Best", name_zh: "自然派", categories: ["Shopping"], description: "Local snack brand with 50+ years history. Wide variety of snacks and beverages." },
+            { name: "Rainbow Creative Arts", name_zh: "Rainbow Creative Arts", categories: ["Shopping"], description: "Children's creativity through artistic activities." },
+            { name: "Zero to One Tea Culture Promotion Centre", name_zh: "茶創樂茶藝推廣中心", categories: ["Shopping"], description: "Detailed courses on tea study - storage, brewing, preparation and drinking." },
+            { name: "Chinese Culture and Art Development Centre", name_zh: "中國文化藝術發展中心", categories: ["Shopping"], description: "Promoting Chinese culture and heritage since 2006." },
+            { name: "Simply Learning", name_zh: "易如學習中心", categories: ["Shopping"], description: "English courses for children with 15+ years experience." },
+            { name: "Linong Tea", name_zh: "立農茗茶", categories: ["Shopping"], description: "Tea leaves and tea wares since 1986 - Pu'er, Tieguanyin, Longjing, Oolong." },
+            { name: "Rex Music", name_zh: "域斯琴行", categories: ["Shopping"], description: "Music courses including snare drum for kindergarten students." },
+            { name: "Entrance (Canton Road)", name_zh: "入口（廣東道）", categories: ["Entrance / Exit"], description: "" },
+            { name: "Entrance (Austin Road West)", name_zh: "入口（柯士甸道西）", categories: ["Entrance / Exit"], description: "" },
+            { name: "Entrance (Austin MTR Station)", name_zh: "入口（柯士甸站）", categories: ["Entrance / Exit"], description: "" },
+            { name: "Information", name_zh: "詢問處", categories: ["Info"], description: "" },
+            { name: "Tickets (LG/F)", name_zh: "票務處（地下低層）", categories: ["Ticket Counter"], description: "" },
+            { name: "Ticketing Kiosk (LG/F)", name_zh: "自助票務機（地下低層）", categories: ["Facilities"], description: "" },
+            { name: "Nursing Room (1/F)", name_zh: "育嬰室 (一樓）", categories: ["Nursing"], description: "" },
+            { name: "Male Toilets (G/F)", name_zh: "男洗手間（地下）", categories: ["Male Toilet"], description: "" },
+            { name: "Female Toilets (G/F)", name_zh: "女洗手間（地下）", categories: ["Female Toilet"], description: "" },
+            { name: "Accessible Toilet (G/F)", name_zh: "暢通易達洗手間（地下）", categories: ["Accessible Toilet"], description: "" },
+            { name: "Toilets (1/F)", name_zh: "洗手間（一樓）", categories: ["Toilet"], description: "" },
+            { name: "Toilets (2/F)", name_zh: "洗手間（二樓）", categories: ["Toilet"], description: "" }
+        ];
+
+        // POI Data - West Kowloon Station
+        const wksPois = [
+            { name: "Yat Lok", name_zh: "Yat Lok", categories: ["Chinese Cuisine"], description: "" },
+            { name: "Tim Ho Wan", name_zh: "Tim Ho Wan", categories: ["Chinese Cuisine"], description: "" },
+            { name: "hana-musubi", name_zh: "hana-musubi", categories: ["Japanese Cuisine"], description: "" },
+            { name: "Starbucks Coffee", name_zh: "Starbucks Coffee", categories: ["Cafe"], description: "" },
+            { name: "Delit", name_zh: "Delit", categories: ["Hong Kong Cafe"], description: "" },
+            { name: "Hong Kong Daily", name_zh: "Hong Kong Daily", categories: ["Hong Kong Cafe"], description: "" },
+            { name: "Chun Shui Tang", name_zh: "Chun Shui Tang", categories: ["Beverage Store"], description: "" },
+            { name: "Maxim's Cakes", name_zh: "Maxim's Cakes", categories: ["Baked Goods"], description: "" },
+            { name: "MX", name_zh: "MX", categories: ["Fast Food"], description: "" },
+            { name: "maxim's express", name_zh: "maxim's express", categories: ["Fast Food"], description: "" },
+            { name: "7-Eleven", name_zh: "7-Eleven", categories: ["Convenience Store"], description: "" },
+            { name: "Circle K", name_zh: "Circle K", categories: ["Convenience Store"], description: "" },
+            { name: "okashi land", name_zh: "okashi land", categories: ["Grocery"], description: "" },
+            { name: "Mannings", name_zh: "Mannings", categories: ["Cosmetics"], description: "" },
+            { name: "Sasa", name_zh: "Sasa", categories: ["Cosmetics"], description: "" },
+            { name: "Colourmix", name_zh: "Colourmix", categories: ["Cosmetics"], description: "" },
+            { name: "Lighten", name_zh: "Lighten", categories: ["Cosmetics"], description: "" },
+            { name: "GODIVA", name_zh: "GODIVA", categories: ["Souvenirs"], description: "" },
+            { name: "GIFT & TAKE", name_zh: "GIFT & TAKE", categories: ["Souvenirs"], description: "" },
+            { name: "Asia Favourites", name_zh: "Asia Favourites", categories: ["Souvenirs"], description: "" },
+            { name: "Voyage Marketplace", name_zh: "Voyage Marketplace", categories: ["Souvenirs"], description: "" },
+            { name: "Hang Heung Cake Shop", name_zh: "Hang Heung Cake Shop", categories: ["Shopping"], description: "" },
+            { name: "L1 Exhibition Area", name_zh: "L1 Exhibition Area", categories: ["Shopping"], description: "" },
+            { name: "MTR e-Store", name_zh: "MTR e-Store", categories: ["Hobby Shop"], description: "" },
+            { name: "Bank of China (Hong Kong)", name_zh: "Bank of China (Hong Kong)", categories: ["Bank"], description: "" },
+            { name: "CMB Wing Lung Bank", name_zh: "CMB Wing Lung Bank", categories: ["Bank"], description: "" },
+            { name: "NCB", name_zh: "NCB", categories: ["Bank"], description: "" },
+            { name: "Bank of Communications (Hong Kong)", name_zh: "Bank of Communications (Hong Kong)", categories: ["Bank"], description: "" },
+            { name: "First", name_zh: "First", categories: ["Currency Exchange"], description: "" },
+            { name: "China Travel Service (Hong Kong)", name_zh: "China Travel Service (Hong Kong)", categories: ["Travel Agent"], description: "" },
+            { name: "Hong Kong Tourism Board", name_zh: "Hong Kong Tourism Board", categories: ["Travel Agent"], description: "" },
+            { name: "Online Beng Seng", name_zh: "Online Beng Seng", categories: ["Travel Agent"], description: "" },
+            { name: "SF Express", name_zh: "SF Express", categories: ["Courier"], description: "" },
+            { name: "Far East Storage", name_zh: "Far East Storage", categories: ["Courier"], description: "" },
+            { name: "NOBLETIME TRAVELLER", name_zh: "NOBLETIME TRAVELLER", categories: ["Luggage"], description: "" },
+            { name: "Good Point", name_zh: "Good Point", categories: ["Healthcare"], description: "" },
+            { name: "Portfolio Management District (AIA)", name_zh: "Portfolio Management District", categories: ["Insurance"], description: "" },
+            { name: "Bauhinia Cultural Gallery", name_zh: "Bauhinia Cultural Gallery", categories: ["Art Gallery"], description: "" },
+            { name: "High Speed Rail Media Centre", name_zh: "High Speed Rail Media Centre", categories: ["Art Studio"], description: "" },
+            { name: "High Speed Rail Visitor Centre", name_zh: "High Speed Rail Visitor Centre", categories: ["Art Studio"], description: "" },
+            { name: "Greater Bay Airlines Customer Service Centre", name_zh: "Greater Bay Airlines", categories: ["Reception Desk"], description: "" },
+            { name: "Police Reporting Centre", name_zh: "Police Reporting Centre", categories: ["Police"], description: "" },
+            { name: "Lost Property Office", name_zh: "Lost Property Office", categories: ["Lost and Found"], description: "" },
+            { name: "Information", name_zh: "Information", categories: ["Information"], description: "" },
+            { name: "Ticketing Counters", name_zh: "Ticketing Counters", categories: ["Ticketing"], description: "" },
+            { name: "Self-service ticket purchase", name_zh: "Self-service ticket purchase", categories: ["Ticketing"], description: "" },
+            { name: "Octopus Selling Machine", name_zh: "Octopus Selling Machine", categories: ["Ticketing"], description: "" },
+            { name: "Self-service Taxi Ticket", name_zh: "Self-service Taxi Ticket", categories: ["Ticketing"], description: "" },
+            { name: "Taxi Station", name_zh: "Taxi Station", categories: ["Taxi Stand"], description: "" },
+            { name: "Exit (Element)", name_zh: "Exit (Element)", categories: ["Entry / Exit"], description: "" },
+            { name: "Exit (Austin Station)", name_zh: "Exit (Austin Station)", categories: ["Entry / Exit"], description: "" },
+            { name: "Exit (Green Plaza)", name_zh: "Exit (Green Plaza)", categories: ["Entry / Exit"], description: "" },
+            { name: "Exit (Bus Terminus)", name_zh: "Exit (Bus Terminus)", categories: ["Entry / Exit"], description: "" },
+            { name: "Exit B1/B2/B3", name_zh: "Exit B1/B2/B3", categories: ["Entry / Exit"], description: "" },
+            { name: "Exit J1/J2/J3", name_zh: "Exit J1/J2/J3", categories: ["Entry / Exit"], description: "" },
+            { name: "Fare Gates", name_zh: "Fare Gates", categories: ["Fare Gate"], description: "" },
+            { name: "Mobile Charging Facility", name_zh: "Mobile Charging Facility", categories: ["Power Charging Station"], description: "" },
+            { name: "Automated External Defibrillator (AED)", name_zh: "AED", categories: ["Defibrillator"], description: "" },
+            { name: "Vending Machine", name_zh: "Vending Machine", categories: ["Vending Machine"], description: "" },
+            { name: "Male Toilet", name_zh: "Male Toilet", categories: ["Male Restroom"], description: "" },
+            { name: "Female Toilet", name_zh: "Female Toilet", categories: ["Female Restroom"], description: "" },
+            { name: "Accessible Toilet", name_zh: "Accessible Toilet", categories: ["Wheelchair Restroom"], description: "" },
+            { name: "Babycare Room", name_zh: "Babycare Room", categories: ["Mother's Room"], description: "" },
+            { name: "Parking", name_zh: "Parking", categories: ["Parking"], description: "" },
+            { name: "Drop off Area", name_zh: "Drop off Area", categories: ["Parking"], description: "" },
+            { name: "Help line", name_zh: "Help line", categories: ["Service"], description: "" }
+        ];
+
+        // Group POIs by category
+        function groupByCategory(pois) {
+            const groups = {};
+            pois.forEach(poi => {
+                poi.categories.forEach(cat => {
+                    if (!groups[cat]) groups[cat] = [];
+                    if (!groups[cat].find(p => p.name === poi.name)) {
+                        groups[cat].push(poi);
+                    }
+                });
+            });
+            return groups;
+        }
+
+        // Render POI groups
+        function renderPOIs(containerId, pois) {
+            const container = document.getElementById(containerId);
+            const groups = groupByCategory(pois);
+            const sortedCategories = Object.keys(groups).sort();
+
+            let html = '';
+            sortedCategories.forEach(category => {
+                const categoryPois = groups[category];
+                html += `
+                    <div class="category-group">
+                        <div class="category-header" onclick="toggleCategory(this)">
+                            <span>${category}</span>
+                            <span class="count">${categoryPois.length}</span>
+                        </div>
+                        <div class="category-pois">
+                            ${categoryPois.map(poi => `
+                                <div class="poi-item">
+                                    <div class="poi-name">${poi.name}</div>
+                                    ${poi.name_zh !== poi.name ? `<div class="poi-name-zh">${poi.name_zh}</div>` : ''}
+                                    ${poi.description ? `<div style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.25rem;">${poi.description.substring(0, 100)}${poi.description.length > 100 ? '...' : ''}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Toggle accordion
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            item.classList.toggle('open');
+        }
+
+        // Toggle category
+        function toggleCategory(header) {
+            const group = header.parentElement;
+            group.classList.toggle('open');
+        }
+
+        // Switch tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderPOIs('xiqu-tab', xiquPois);
+            renderPOIs('wks-tab', wksPois);
+        });
+    </script>
 </body>
 </html>
